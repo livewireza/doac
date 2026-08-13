@@ -34,6 +34,7 @@ jobs:
         # The installable package lives under cmd/fabric, not the module root
         run: |
           go install github.com/danielmiessler/fabric/cmd/fabric@latest
+          go install github.com/danielmiessler/fabric/cmd/yt@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
           mkdir -p ~/.config/fabric
           echo "${{ secrets.FABRIC_ENV }}" > ~/.config/fabric/.env
