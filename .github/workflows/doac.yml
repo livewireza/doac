@@ -26,9 +26,10 @@ jobs:
         run: pip install yt-dlp requests
 
       - name: Install Fabric
-        # fabric-ai is the Daniel Miessler Fabric tool; LLM key lives in ~/.config/fabric/.env
+        # Daniel Miessler's Fabric is a Go binary; ubuntu-latest ships with Go
         run: |
-          pip install fabric-ai
+          go install github.com/danielmiessler/fabric@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
           mkdir -p ~/.config/fabric
           echo "${{ secrets.FABRIC_ENV }}" > ~/.config/fabric/.env
 
