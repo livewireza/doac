@@ -25,10 +25,15 @@ jobs:
       - name: Install Python dependencies
         run: pip install yt-dlp requests
 
+      - name: Set up Go (Fabric requires >= 1.26)
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
       - name: Install Fabric
-        # Daniel Miessler's Fabric is a Go binary; ubuntu-latest ships with Go
+        # The installable package lives under cmd/fabric, not the module root
         run: |
-          go install github.com/danielmiessler/fabric@latest
+          go install github.com/danielmiessler/fabric/cmd/fabric@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
           mkdir -p ~/.config/fabric
           echo "${{ secrets.FABRIC_ENV }}" > ~/.config/fabric/.env
