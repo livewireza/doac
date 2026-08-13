@@ -1,0 +1,54 @@
+name: TheDiaryOfACEO Daily Digest
+
+on:
+  schedule:
+    # 08:00 UTC every day
+    - cron: "0 8 * * *"
+  workflow_dispatch: # allow manual runs
+
+permissions:
+  contents: write   # needed to commit seen_videos.json back to the repo
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install yt-dlp requests
+
+      - name: Install Fabric
+        # fabric-ai is the Daniel Miessler Fabric tool; LLM key lives in ~/.config/fabric/.env
+        run: |
+          pip install fabric-ai
+          mkdir -p ~/.config/fabric
+          echo "${{ secrets.FABRIC_ENV }}" > ~/.config/fabric/.env
+
+      - name: Run digest
+        env:
+          MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
+          MAILGUN_DOMAIN:  ${{ secrets.MAILGUN_DOMAIN }}
+          MAILGUN_TO:      ${{ secrets.MAILGUN_TO }}
+          MAILGUN_FROM:    ${{ secrets.MAILGUN_FROM }}
+        run: python doac.py
+
+      - name: Persist seen_videos.json
+        # Only commit if the state file was updated (i.e. new videos were found)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet seen_videos.json 2>/dev/null && git ls-files --error-unmatch seen_videos.json 2>/dev/null; then
+            echo "No changes to seen_videos.json — nothing to commit."
+          else
+            git add seen_videos.json
+            git commit -m "chore: update seen_videos.json [skip ci]"
+            git push
+          fi
