@@ -12,8 +12,10 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import requests
+from youtube_transcript_api import YouTubeTranscriptApi
 
 # ── Config (all secrets come from environment / GitHub Actions secrets) ───────
 CHANNEL_URL  = "https://www.youtube.com/@TheDiaryOfACEO/videos"
@@ -60,21 +62,26 @@ def fetch_latest_videos() -> list:
 
 # ── Summarise via yt + Fabric ─────────────────────────────────────────────────
 
+def get_transcript(url: str) -> str:
+    video_id = parse_qs(urlparse(url).query).get("v", [None])[0]
+    if not video_id:
+        raise ValueError(f"Could not extract video ID from {url}")
+    entries = YouTubeTranscriptApi.get_transcript(video_id)
+    return " ".join(e["text"] for e in entries)
+
+
 def summarise(url: str) -> str:
     """Pipe a video transcript through Fabric's extract_wisdom pattern."""
-    transcript = subprocess.run(
-        ["yt", "--transcript", url],
-        capture_output=True, text=True, check=True,
-    )
+    transcript_text = get_transcript(url)
     wisdom = subprocess.run(
         ["fabric", "--pattern", "extract_wisdom"],
-        input=transcript.stdout,
+        input=transcript_text,
         capture_output=True, text=True, check=True,
     )
     return wisdom.stdout.strip()
 
 # ── Email via Mailgun ─────────────────────────────────────────────────────────
-# Adapted from check_htb_exam.py
+# Adapted from https://github.com/livewireza/cbbh-exam-check/blob/main/check_htb_exam.py
 
 def mailgun_send(subject: str, text: str):
     if not MAILGUN_API_KEY or not MAILGUN_DOMAIN:
