@@ -26,9 +26,10 @@ jobs:
         run: pip install yt-dlp requests
 
       - name: Set up Go (Fabric requires >= 1.26)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "stable"
+          cache: false
 
       - name: Install Fabric
         # The installable package lives under cmd/fabric, not the module root
