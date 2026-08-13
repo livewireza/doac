@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python dependencies
-        run: pip install yt-dlp requests
+        run: pip install yt-dlp requests youtube-transcript-api
 
       - name: Set up Go (Fabric requires >= 1.26)
         uses: actions/setup-go@v6
@@ -35,7 +35,6 @@ jobs:
         # The installable package lives under cmd/fabric, not the module root
         run: |
           go install github.com/danielmiessler/fabric/cmd/fabric@latest
-          go install github.com/danielmiessler/fabric/cmd/yt@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
           mkdir -p ~/.config/fabric
           echo "${{ secrets.FABRIC_ENV }}" > ~/.config/fabric/.env
