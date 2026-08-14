@@ -66,8 +66,8 @@ def get_transcript(url: str) -> str:
     video_id = parse_qs(urlparse(url).query).get("v", [None])[0]
     if not video_id:
         raise ValueError(f"Could not extract video ID from {url}")
-    entries = YouTubeTranscriptApi.get_transcript(video_id)
-    return " ".join(e["text"] for e in entries)
+    entries = YouTubeTranscriptApi().fetch(video_id)
+    return " ".join(e.text for e in entries)
 
 
 def summarise(url: str) -> str:
