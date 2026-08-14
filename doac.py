@@ -23,10 +23,11 @@ CHANNEL_URL  = "https://www.youtube.com/@TheDiaryOfACEO/videos"
 PLAYLIST_END = 5
 STATE_FILE   = Path(__file__).parent / "seen_videos.json"
 
-MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY", "")
-MAILGUN_DOMAIN  = os.getenv("MAILGUN_DOMAIN", "")
-MAILGUN_TO      = os.getenv("MAILGUN_TO", "")
-MAILGUN_FROM    = os.getenv("MAILGUN_FROM", "doac-digest@example.com")
+MAILGUN_API_KEY      = os.getenv("MAILGUN_API_KEY", "")
+MAILGUN_DOMAIN       = os.getenv("MAILGUN_DOMAIN", "")
+MAILGUN_TO           = os.getenv("MAILGUN_TO", "")
+MAILGUN_FROM         = os.getenv("MAILGUN_FROM", "doac-digest@example.com")
+YOUTUBE_COOKIES_FILE = os.getenv("YOUTUBE_COOKIES_FILE", "")
 
 # ── State persistence ─────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ def fetch_latest_videos() -> list:
         "--flat-playlist",
         "--playlist-end", str(PLAYLIST_END),
         "--print", "%(upload_date)s\t%(id)s\t%(title)s\t%(webpage_url)s",
+        *(["--cookies", YOUTUBE_COOKIES_FILE] if YOUTUBE_COOKIES_FILE else []),
         CHANNEL_URL,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -91,6 +93,7 @@ def get_transcript(url: str) -> str:
                 "--sub-lang", "en.*",
                 "--sub-format", "vtt",
                 "--output", f"{tmpdir}/%(id)s",
+                *(["--cookies", YOUTUBE_COOKIES_FILE] if YOUTUBE_COOKIES_FILE else []),
                 url,
             ],
             capture_output=True, text=True,
