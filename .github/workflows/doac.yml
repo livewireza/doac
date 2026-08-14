@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python dependencies
-        run: pip install yt-dlp requests youtube-transcript-api
+        run: pip install yt-dlp requests
 
       - name: Set up Go (Fabric requires >= 1.26)
         uses: actions/setup-go@v6
@@ -39,12 +39,16 @@ jobs:
           mkdir -p ~/.config/fabric
           echo "${{ secrets.FABRIC_ENV }}" > ~/.config/fabric/.env
 
+      - name: Write YouTube cookies
+        run: echo "${{ secrets.YOUTUBE_COOKIES }}" > /tmp/yt-cookies.txt
+
       - name: Run digest
         env:
-          MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
-          MAILGUN_DOMAIN:  ${{ secrets.MAILGUN_DOMAIN }}
-          MAILGUN_TO:      ${{ secrets.MAILGUN_TO }}
-          MAILGUN_FROM:    ${{ secrets.MAILGUN_FROM }}
+          MAILGUN_API_KEY:      ${{ secrets.MAILGUN_API_KEY }}
+          MAILGUN_DOMAIN:       ${{ secrets.MAILGUN_DOMAIN }}
+          MAILGUN_TO:           ${{ secrets.MAILGUN_TO }}
+          MAILGUN_FROM:         ${{ secrets.MAILGUN_FROM }}
+          YOUTUBE_COOKIES_FILE: /tmp/yt-cookies.txt
         run: python doac.py
 
       - name: Persist seen_videos.json
