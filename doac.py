@@ -82,22 +82,29 @@ def get_transcript(url: str) -> str:
     if not video_id:
         raise ValueError(f"Could not extract video ID from {url}")
     with tempfile.TemporaryDirectory() as tmpdir:
-        subprocess.run(
+        result = subprocess.run(
             [
                 "yt-dlp",
                 "--skip-download",
+                "--write-sub",
                 "--write-auto-sub",
-                "--sub-lang", "en",
+                "--sub-lang", "en.*",
                 "--sub-format", "vtt",
                 "--output", f"{tmpdir}/%(id)s",
                 url,
             ],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True,
         )
-        vtt_path = Path(tmpdir) / f"{video_id}.en.vtt"
-        if not vtt_path.exists():
-            raise FileNotFoundError(f"No captions found for {video_id}")
-        return _parse_vtt(vtt_path.read_text(encoding="utf-8"))
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"yt-dlp exited {result.returncode}\n{result.stderr.strip()}"
+            )
+        vtt_files = list(Path(tmpdir).glob("*.vtt"))
+        if not vtt_files:
+            raise FileNotFoundError(
+                f"No captions found for {video_id}. yt-dlp output:\n{result.stdout.strip()}"
+            )
+        return _parse_vtt(vtt_files[0].read_text(encoding="utf-8"))
 
 
 def summarise(url: str) -> str:
@@ -163,7 +170,7 @@ def main():
                 f"{summary}"
             )
             seen.add(v["id"])
-        except subprocess.CalledProcessError as exc:
+        except (subprocess.CalledProcessError, RuntimeError, FileNotFoundError, ValueError) as exc:
             print(f"  WARNING: could not summarise {v['url']}: {exc}", file=sys.stderr)
 
     if sections:
