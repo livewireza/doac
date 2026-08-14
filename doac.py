@@ -9,13 +9,14 @@ is persisted in seen_videos.json alongside this script.
 
 import json
 import os
+import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import requests
-from youtube_transcript_api import YouTubeTranscriptApi
 
 # ── Config (all secrets come from environment / GitHub Actions secrets) ───────
 CHANNEL_URL  = "https://www.youtube.com/@TheDiaryOfACEO/videos"
@@ -62,12 +63,41 @@ def fetch_latest_videos() -> list:
 
 # ── Summarise via yt + Fabric ─────────────────────────────────────────────────
 
+def _parse_vtt(text: str) -> str:
+    lines, prev = [], None
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or "-->" in line or line.startswith(("WEBVTT", "Kind:", "Language:")):
+            continue
+        line = re.sub(r"<\d{2}:\d{2}:\d{2}\.\d{3}>", "", line)
+        line = re.sub(r"<[^>]+>", "", line).strip()
+        if line and line != prev:
+            lines.append(line)
+            prev = line
+    return " ".join(lines)
+
+
 def get_transcript(url: str) -> str:
     video_id = parse_qs(urlparse(url).query).get("v", [None])[0]
     if not video_id:
         raise ValueError(f"Could not extract video ID from {url}")
-    entries = YouTubeTranscriptApi().fetch(video_id)
-    return " ".join(e.text for e in entries)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        subprocess.run(
+            [
+                "yt-dlp",
+                "--skip-download",
+                "--write-auto-sub",
+                "--sub-lang", "en",
+                "--sub-format", "vtt",
+                "--output", f"{tmpdir}/%(id)s",
+                url,
+            ],
+            capture_output=True, text=True, check=True,
+        )
+        vtt_path = Path(tmpdir) / f"{video_id}.en.vtt"
+        if not vtt_path.exists():
+            raise FileNotFoundError(f"No captions found for {video_id}")
+        return _parse_vtt(vtt_path.read_text(encoding="utf-8"))
 
 
 def summarise(url: str) -> str:
