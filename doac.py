@@ -52,7 +52,9 @@ def fetch_latest_videos() -> list:
         *(["--cookies", YOUTUBE_COOKIES_FILE] if YOUTUBE_COOKIES_FILE else []),
         CHANNEL_URL,
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"yt-dlp exited {result.returncode}\n{result.stderr.strip()}")
 
     videos = []
     for line in result.stdout.strip().splitlines():
