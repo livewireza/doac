@@ -3,7 +3,7 @@ name: TheDiaryOfACEO Daily Digest
 on:
   schedule:
     # 08:00 UTC every day
-    - cron: "0 8 * * *"
+    #- cron: "0 8 * * *"
   workflow_dispatch: # allow manual runs
 
 permissions:
